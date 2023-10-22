@@ -1,6 +1,6 @@
 ﻿namespace Ashampoo.Abstraction
 {
-    public interface CanExecuteChangeable
+    public interface ICanExecuteChangeable
     {
         void RaiseCanExecuteChanged();
     }

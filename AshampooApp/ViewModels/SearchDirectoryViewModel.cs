@@ -61,7 +61,7 @@ namespace AshampooApp.ViewModels
                 {
                     _selectedDrive = value;
                     OnPropertyChanged(nameof(SelectedDrive));
-                    (_searchCommand as CanExecuteChangeable)?.RaiseCanExecuteChanged();
+                    (_searchCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -77,9 +77,9 @@ namespace AshampooApp.ViewModels
                     _isSearching = value;
 
                     OnPropertyChanged(nameof(IsSearching));
-                    (_pauseCommand as CanExecuteChangeable)?.RaiseCanExecuteChanged();
-                    (_resumeCommand as CanExecuteChangeable)?.RaiseCanExecuteChanged();
-                    (_searchCommand as CanExecuteChangeable)?.RaiseCanExecuteChanged();
+                    (_pauseCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
+                    (_resumeCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
+                    (_searchCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -95,7 +95,7 @@ namespace AshampooApp.ViewModels
                     _isPaused = value;
 
                     OnPropertyChanged(nameof(IsPaused));
-                    (_pauseCommand as CanExecuteChangeable)?.RaiseCanExecuteChanged();
+                    (_pauseCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
                 }
             }
         }

@@ -6,7 +6,7 @@ namespace AshampooApp.Commands
 {
     public class DelegateCommand :
         ICommand, 
-        CanExecuteChangeable
+        ICanExecuteChangeable
     {
         private readonly Action _execute;
         private readonly Func<bool> _canExecute;
