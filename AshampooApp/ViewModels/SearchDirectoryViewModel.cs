@@ -237,20 +237,22 @@ namespace AshampooApp.ViewModels
                 }
             });
 
-            if (fileCount > 0)
+            if (fileCount == 0)
             {
-                var directoryModel = new DirectoryInfoModel
-                {
-                    DirectoryPath = directoryInfo.FullName,
-                    FileCount = fileCount,
-                    TotalSize = totalSize
-                };
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    UiDirectories.Add(directoryModel);
-                });
+                return;
             }
+
+            var directoryModel = new DirectoryInfoModel
+            {
+                DirectoryPath = directoryInfo.FullName,
+                FileCount = fileCount,
+                TotalSize = totalSize
+            };
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                UiDirectories.Add(directoryModel);
+            });
         }
 
         private bool IsFileSizeLargerThanMegabytes(int mg, FileInfo file)
