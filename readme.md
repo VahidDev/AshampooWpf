@@ -6,12 +6,12 @@ AshampooWpf is a simple WPF application that provides a list of all drives and l
 As you run the search, discovered directories are immediately shown in the main window. For each directory, you'll see the total count of files and their combined size, not including sub-directory contents.
 
 ## Usage
-Launch the application.
-Click the "Search" button.
-Pause or resume the search with the designated button as needed.
-View discovered directories and their file statistics in real-time.
+1. Launch the application.
+2. Click the "Search" button.
+3. Pause or resume the search with the designated button as needed.
+4. View discovered directories and their file statistics in real-time.
 
 ## Technical Details
-Design Pattern: MVVM
-No IOC container or factory pattern is used.
-Business and presentation layers are combined in a single project.
+*Design Pattern: MVVM
+*No IOC container or factory pattern is used.
+*Business and presentation layers are combined in a single project.
