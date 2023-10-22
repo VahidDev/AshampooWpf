@@ -12,6 +12,6 @@ As you run the search, discovered directories are immediately shown in the main 
 4. View discovered directories and their file statistics in real-time.
 
 ## Technical Details
-*Design Pattern: MVVM
-*No IOC container or factory pattern is used.
-*Business and presentation layers are combined in a single project.
+* Design Pattern: MVVM
+* No IOC container or factory pattern is used.
+* Business and presentation layers are combined in a single project.
