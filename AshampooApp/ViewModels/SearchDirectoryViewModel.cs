@@ -174,7 +174,7 @@ namespace AshampooApp.ViewModels
                     var enumerationOptions = new EnumerationOptions
                     {
                         IgnoreInaccessible = true,
-                        RecurseSubdirectories = true
+                        RecurseSubdirectories = false
                     };
 
                     if (searchFromStart)
