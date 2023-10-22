@@ -15,8 +15,7 @@ using AshampooApp.Dialogs;
 
 namespace AshampooApp.ViewModels
 {
-    public class SearchDirectoryViewModel
-        : ViewModelBase
+    public class SearchDirectoryViewModel : ViewModelBase
 
     {
         private string[] _allDirectoryPaths;

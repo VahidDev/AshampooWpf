@@ -4,9 +4,9 @@ using System.Windows.Input;
 
 namespace AshampooApp.Commands
 {
-    public class DelegateCommand :
-        ICommand, 
-        ICanExecuteChangeable
+    public class DelegateCommand 
+        : ICommand
+        , ICanExecuteChangeable
     {
         private readonly Action _execute;
         private readonly Func<bool> _canExecute;

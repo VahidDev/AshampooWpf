@@ -1,10 +1,11 @@
-﻿using AshampooApp.Commands;
+﻿using Ashampoo.Abstraction.ViewModel;
+using AshampooApp.Commands;
 using System;
 using System.Windows.Input;
 
 namespace AshampooApp.ViewModels
 {
-    public class ErrorDialogViewModel
+    public class ErrorDialogViewModel : ViewModelBase
     {
         public string Title { get; set; }
         public string Message { get; set; }
