@@ -1,13 +1,17 @@
 # AshampooWpf
 
-# Description
-Windows app that lists all the drives and logical volumes on the user's system. Upon clicking a button, the app searches
-through all the files on the selected drive/volume and finds all directories that directly contain individual files larger than 10 MB. Processing
-is be done in multiple threads in parallel to increase performance. It is possible to pause and resume the search by pressing a
-button.
-Any discovered directory is immediately shown in a separate result list in the main window while the search is still running. The app
-also displays two numbers for each found directory: the count of all files (of any size) in the directory, as well as the combined size of
-these files. The contents of sub-directories are not be included in these numbers.
+## Overview
+AshampooWpf is a simple WPF application that provides a list of all drives and logical volumes on your computer. With a simple click, you can search for directories containing individual files larger than 10 MB on the selected drive or volume. The app utilizes parallel processing for faster performance, and you can pause and resume the search as needed.
 
-# Notes
-Business and Presentation layers are kept in one project
+As you run the search, discovered directories are immediately shown in the main window. For each directory, you'll see the total count of files and their combined size, not including sub-directory contents.
+
+## Usage
+Launch the application.
+Click the "Search" button.
+Pause or resume the search with the designated button as needed.
+View discovered directories and their file statistics in real-time.
+
+## Technical Details
+Design Pattern: MVVM
+No IOC container or factory pattern is used.
+Business and presentation layers are combined in a single project.
