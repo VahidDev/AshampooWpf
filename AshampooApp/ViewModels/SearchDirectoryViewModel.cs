@@ -159,7 +159,7 @@ namespace AshampooApp.ViewModels
 
         private bool CanPauseSearch()
         {
-            return IsSearching;
+            return IsSearching && !_isPaused;
         }
 
         private bool CanResumeSearch()
