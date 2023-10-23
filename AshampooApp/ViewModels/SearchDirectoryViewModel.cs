@@ -215,6 +215,7 @@ namespace AshampooApp.ViewModels
 
         private void ProcessDirectories(EnumerationOptions enumerationOptions)
         {
+                enumerationOptions.RecurseSubdirectories = false;
             for (int i = _lastProcessedDirectoryIndex; i < _allDirectoryPaths.Length; i++)
             {
                 var directoryPath = _allDirectoryPaths[i];
@@ -225,6 +226,7 @@ namespace AshampooApp.ViewModels
                 }
 
                 var directoryInfo = new DirectoryInfo(directoryPath);
+
 
                 if (!_directoryFiles.ContainsKey(directoryPath))
                 {
