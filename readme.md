@@ -15,3 +15,7 @@ As you run the search, discovered directories are immediately shown in the main 
 * Design Pattern: MVVM
 * No IOC container or factory pattern is used.
 * Business and presentation layers are combined in a single project.
+
+# Importnant notes
+The application will preserve the current state of folders and files when the search is initiated. This means that if you pause the search and later resume it, any newly added files will not be included in the ongoing search. To see these newly added files, you'll need to reselect the drive, at which point the updated folders and files will become visible.
+
