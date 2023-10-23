@@ -231,7 +231,7 @@ namespace AshampooApp.ViewModels
                 if (!_directoryFiles.ContainsKey(directoryPath))
                 {
                     var filesToAddToCollection = directoryInfo.EnumerateFiles("*", enumerationOptions)
-                                          .OrderBy(f => f.Name);
+                                                              .OrderBy(f => f.Name);
 
                     _directoryFiles.Add(directoryPath, filesToAddToCollection);
                 }
@@ -289,7 +289,8 @@ namespace AshampooApp.ViewModels
         private void InitializeDirectoryCollections(EnumerationOptions enumerationOptions)
         {
             _allDirectoryPaths = Directory.EnumerateDirectories(SelectedDrive, "*", enumerationOptions)
-                                                    .OrderBy(d => d).ToArray();
+                                          .Order()
+                                          .ToArray();
 
             _directoryFiles = new Dictionary<string, IEnumerable<FileInfo>>();
         }
