@@ -169,7 +169,7 @@ namespace AshampooApp.ViewModels
 
         private void PopulateDrives()
         {
-            DriveInfo[] drives = DriveInfo.GetDrives();
+            var drives = DriveInfo.GetDrives();
             Drives = new ObservableCollection<string>(drives.Select(drive => drive.Name));
         }
 
