@@ -26,6 +26,7 @@ namespace AshampooApp.ViewModels
         public SearchDirectoryViewModel()
         {
             UiDirectories = new ObservableCollection<DirectoryInfoModel>();
+            PopulateDrives();
         }
 
         private ObservableCollection<DirectoryInfoModel> _uiDirectories;
@@ -50,6 +51,18 @@ namespace AshampooApp.ViewModels
             }
         }
 
+        private ObservableCollection<string> _drives;
+        public ObservableCollection<string> Drives
+        {
+            get { return _drives; }
+            set
+            {
+                _drives = value;
+                OnPropertyChanged(nameof(Drives));
+                (_selectionChangedCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
+            }
+        }
+
         private string _selectedDrive;
         public string SelectedDrive
         {
@@ -60,7 +73,7 @@ namespace AshampooApp.ViewModels
                 {
                     _selectedDrive = value;
                     OnPropertyChanged(nameof(SelectedDrive));
-                    (_searchCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
+                    (_selectionChangedCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -78,7 +91,7 @@ namespace AshampooApp.ViewModels
                     OnPropertyChanged(nameof(IsSearching));
                     (_pauseCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
                     (_resumeCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
-                    (_searchCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
+                    (_selectionChangedCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -99,16 +112,16 @@ namespace AshampooApp.ViewModels
             }
         }
 
-        private ICommand _searchCommand;
-        public ICommand SearchCommand
+        private ICommand _selectionChangedCommand;
+        public ICommand SelectionChangedCommand
         {
             get
             {
-                if (_searchCommand == null)
+                if (_selectionChangedCommand == null)
                 {
-                    _searchCommand = new DelegateCommand(async () => await SearchAsync(true), CanSearch);
+                    _selectionChangedCommand = new DelegateCommand(async () => await SearchAsync(true), CanSearch);
                 }
-                return _searchCommand;
+                return _selectionChangedCommand;
             }
         }
 
@@ -141,7 +154,7 @@ namespace AshampooApp.ViewModels
 
         private bool CanSearch()
         {
-            return !IsSearching && !string.IsNullOrWhiteSpace(SelectedDrive);
+            return Drives != null && Drives.Count > 0;
         }
 
         private bool CanPauseSearch()
@@ -152,6 +165,12 @@ namespace AshampooApp.ViewModels
         private bool CanResumeSearch()
         {
             return !IsSearching && _isPaused;
+        }
+
+        private void PopulateDrives()
+        {
+            DriveInfo[] drives = DriveInfo.GetDrives();
+            Drives = new ObservableCollection<string>(drives.Select(drive => drive.Name));
         }
 
         private async Task SearchAsync(bool searchFromStart)
@@ -173,7 +192,7 @@ namespace AshampooApp.ViewModels
                     var enumerationOptions = new EnumerationOptions
                     {
                         IgnoreInaccessible = true,
-                        RecurseSubdirectories = false
+                        RecurseSubdirectories = true
                     };
 
                     if (searchFromStart)
@@ -207,8 +226,14 @@ namespace AshampooApp.ViewModels
 
                 var directoryInfo = new DirectoryInfo(directoryPath);
 
-                _directoryFiles.TryAdd(directoryPath, directoryInfo.EnumerateFiles("*", enumerationOptions)
-                                                                   .OrderBy(f => f.Name));
+                if (!_directoryFiles.ContainsKey(directoryPath))
+                {
+                    var filesToAddToCollection = directoryInfo.EnumerateFiles("*", enumerationOptions)
+                                          .OrderBy(f => f.Name);
+
+                    _directoryFiles.Add(directoryPath, filesToAddToCollection);
+                }
+
                 var files = _directoryFiles[directoryPath];
 
                 ProcessFiles(files, directoryInfo);
