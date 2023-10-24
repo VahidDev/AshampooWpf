@@ -257,7 +257,7 @@ namespace AshampooApp.ViewModels
             long totalSize = 0;
             int fileCount = 0;
 
-            var filePaths = await Task.Run(() => Directory.EnumerateFiles(directory, "*", _fileSearchOptions));
+            var filePaths = Directory.EnumerateFiles(directory, "*", _fileSearchOptions);
             
             foreach (var filePath in filePaths)
             {
