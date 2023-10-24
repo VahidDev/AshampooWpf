@@ -274,6 +274,8 @@ namespace AshampooApp.ViewModels
                 }
             }
 
+            _processedDirectories.TryAdd(directory, directory);
+
             if (fileCount == 0)
             {
                 return;
@@ -295,8 +297,6 @@ namespace AshampooApp.ViewModels
             {
                 UiDirectories.Add(directoryModel);
             });
-
-            _processedDirectories.TryAdd(directory, directory);
         }
 
         private async Task InitializeSearchAsync()
