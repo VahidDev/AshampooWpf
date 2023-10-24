@@ -374,6 +374,7 @@ namespace AshampooApp.ViewModels
         public void Dispose()
         {
             _searchCancellationTokenSource?.Dispose();
+            _semaphore?.Release();
             _semaphore?.Dispose();
         }
     }
