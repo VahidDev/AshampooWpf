@@ -1,11 +1,11 @@
-﻿using Ashampoo.Abstraction.ViewModel;
-using AshampooApp.Commands;
+﻿using AshampooApp.Commands;
+using Prism.Mvvm;
 using System;
 using System.Windows.Input;
 
 namespace AshampooApp.ViewModels
 {
-    public class ErrorDialogViewModel : ViewModelBase
+    public class ErrorDialogViewModel : BindableBase
     {
         public string Title { get; set; }
         public string Message { get; set; }

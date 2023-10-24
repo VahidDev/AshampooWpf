@@ -1,13 +1,11 @@
 ﻿<Window x:Class="AshampooApp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:viewModels="clr-namespace:AshampooApp.ViewModels"
-        xmlns:views="clr-namespace:AshampooApp.Views"
+        xmlns:constants="clr-namespace:Ashampoo.Domain.Constants;assembly=Ashampoo.Domain"
+        xmlns:prism="http://prismlibrary.com/"
         Title="Directory Search">
-    <Window.DataContext>
-        <viewModels:MainViewModel />
-    </Window.DataContext>
+
     <Grid>
-        <views:SearchDirectoryView />
+        <ContentControl prism:RegionManager.RegionName="{Binding Source={x:Static constants:RegionNames.MainRegion}}" />
     </Grid>
 </Window>

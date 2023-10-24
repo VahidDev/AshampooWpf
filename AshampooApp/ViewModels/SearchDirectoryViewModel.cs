@@ -3,7 +3,6 @@ using System.Windows.Input;
 using AshampooApp.Domain;
 using Ashampoo.Abstraction;
 using AshampooApp.Commands;
-using Ashampoo.Abstraction.ViewModel;
 using System.Collections.Generic;
 using System.Threading;
 using System.IO;
@@ -12,20 +11,44 @@ using System.Linq;
 using System.Windows;
 using System;
 using AshampooApp.Dialogs;
+using Prism.Mvvm;
+using AshampooApp.Abstraction;
+using System.Collections.Concurrent;
 
 namespace AshampooApp.ViewModels
 {
-    public class SearchDirectoryViewModel : ViewModelBase
+    public class SearchDirectoryViewModel 
+        : BindableBase
+        , ISearchDirectoryViewModel
+        , IDisposable
 
     {
-        private string[] _allDirectoryPaths;
-        private IDictionary<string, IEnumerable<FileInfo>> _directoryFiles;
+        private Task _searchTask;
         private CancellationTokenSource _searchCancellationTokenSource;
-        private int _lastProcessedDirectoryIndex;
+        private ConcurrentDictionary<string,string> _processedDirectories;
+        private readonly EnumerationOptions _fileSearchOptions;
+        private readonly EnumerationOptions _directorySearchOptions;
+        private readonly SemaphoreSlim _semaphore;
 
         public SearchDirectoryViewModel()
         {
             UiDirectories = new ObservableCollection<DirectoryInfoModel>();
+            _processedDirectories = new ConcurrentDictionary<string, string>();
+
+            _directorySearchOptions = new EnumerationOptions
+            {
+                IgnoreInaccessible = true,
+                RecurseSubdirectories = true
+            };
+
+            _fileSearchOptions = new EnumerationOptions
+            {
+                IgnoreInaccessible = true,
+                RecurseSubdirectories = false
+            };
+
+            _semaphore = new SemaphoreSlim(1, 5);
+
             PopulateDrives();
         }
 
@@ -35,8 +58,7 @@ namespace AshampooApp.ViewModels
             get { return _uiDirectories; }
             set
             {
-                _uiDirectories = value;
-                OnPropertyChanged(nameof(UiDirectories));
+                SetProperty(ref _uiDirectories, value);
             }
         }
 
@@ -47,7 +69,7 @@ namespace AshampooApp.ViewModels
             set
             {
                 _searchPath = value;
-                OnPropertyChanged(nameof(SearchPath));
+                SetProperty(ref _searchPath, value);
             }
         }
 
@@ -58,7 +80,7 @@ namespace AshampooApp.ViewModels
             set
             {
                 _drives = value;
-                OnPropertyChanged(nameof(Drives));
+                SetProperty(ref _drives, value);
                 (_selectionChangedCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
             }
         }
@@ -72,7 +94,7 @@ namespace AshampooApp.ViewModels
                 if (_selectedDrive != value)
                 {
                     _selectedDrive = value;
-                    OnPropertyChanged(nameof(SelectedDrive));
+                    SetProperty(ref _selectedDrive, value);
                     (_selectionChangedCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
                 }
             }
@@ -88,7 +110,7 @@ namespace AshampooApp.ViewModels
                 {
                     _isSearching = value;
 
-                    OnPropertyChanged(nameof(IsSearching));
+                    SetProperty(ref _isSearching, value);
                     (_pauseCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
                     (_resumeCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
                     (_selectionChangedCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
@@ -106,7 +128,7 @@ namespace AshampooApp.ViewModels
                 {
                     _isPaused = value;
 
-                    OnPropertyChanged(nameof(IsPaused));
+                    SetProperty(ref _isPaused, value);
                     (_pauseCommand as ICanExecuteChangeable)?.RaiseCanExecuteChanged();
                 }
             }
@@ -119,7 +141,7 @@ namespace AshampooApp.ViewModels
             {
                 if (_selectionChangedCommand == null)
                 {
-                    _selectionChangedCommand = new DelegateCommand(async () => await SearchAsync(true), CanSearch);
+                    _selectionChangedCommand = new DelegateCommand(async () => await InitializeSearchAsync(), CanSearch);
                 }
                 return _selectionChangedCommand;
             }
@@ -146,7 +168,7 @@ namespace AshampooApp.ViewModels
             {
                 if (_resumeCommand == null)
                 {
-                    _resumeCommand = new DelegateCommand(async () => await ResumeSearch(), CanResumeSearch);
+                    _resumeCommand = new DelegateCommand(async () => await ResumeSearchAsync(), CanResumeSearch);
                 }
                 return _resumeCommand;
             }
@@ -173,39 +195,21 @@ namespace AshampooApp.ViewModels
             Drives = new ObservableCollection<string>(drives.Select(drive => drive.Name));
         }
 
-        private async Task SearchAsync(bool searchFromStart)
+        private async Task SearchAsync()
         {
             IsSearching = true;
             IsPaused = false;
 
-            if (searchFromStart)
-            {
-                ResetSearch();
-            }
-
-            _searchCancellationTokenSource = new CancellationTokenSource();
-
             try
             {
-                await Task.Run(() =>
-                {
-                    var enumerationOptions = new EnumerationOptions
-                    {
-                        IgnoreInaccessible = true,
-                        RecurseSubdirectories = true
-                    };
-
-                    if (searchFromStart)
-                    {
-                        InitializeDirectoryCollections(enumerationOptions);
-                    }
-
-                    ProcessDirectories(enumerationOptions);
-                });
+                await Task.Run(ProcessDirectoriesAsync);
+            }
+            catch (OperationCanceledException)
+            {
             }
             catch (Exception ex)
             {
-                ShowModal("Error", "An error occurred: " + ex.Message);
+                await ShowModalAsync("Error", "An error occurred: " + ex.Message);
             }
             finally
             {
@@ -213,55 +217,62 @@ namespace AshampooApp.ViewModels
             }
         }
 
-        private void ProcessDirectories(EnumerationOptions enumerationOptions)
+        private async Task ProcessDirectoriesAsync()
         {
-            enumerationOptions.RecurseSubdirectories = false;
+            var tasks = new List<Task>();
+            var directories = Directory.EnumerateDirectories(SelectedDrive, "*", _directorySearchOptions)
+                                       .Where((directory) => !_processedDirectories.ContainsKey(directory));
 
-            for (int i = _lastProcessedDirectoryIndex; i < _allDirectoryPaths.Length; i++)
+            foreach (var directory in directories)
             {
-                var directoryPath = _allDirectoryPaths[i];
-
-                if (IsCancellationRequested())
+                if (_searchCancellationTokenSource.Token.IsCancellationRequested)
                 {
-                    return;
+                    break;
                 }
 
-                var directoryInfo = new DirectoryInfo(directoryPath);
-
-                if (!_directoryFiles.ContainsKey(directoryPath))
+                await _semaphore.WaitAsync();
+                tasks.Add(Task.Factory.StartNew(async () =>
                 {
-                    var filesToAddToCollection = directoryInfo.EnumerateFiles("*", enumerationOptions)
-                                                              .OrderBy(f => f.Name);
+                    try
+                    {
+                        if (_searchCancellationTokenSource.Token.IsCancellationRequested)
+                        {
+                            return;
+                        }
 
-                    _directoryFiles.Add(directoryPath, filesToAddToCollection);
-                }
-
-                var files = _directoryFiles[directoryPath];
-
-                ProcessFiles(files, directoryInfo);
-
-                Interlocked.Increment(ref _lastProcessedDirectoryIndex);
+                        await GetFilesInDirectoryAsync(directory);
+                    }
+                    finally
+                    {
+                        _semaphore.Release();
+                    }
+                }));
             }
+
+            await Task.WhenAll(tasks);
         }
 
-        private void ProcessFiles(IEnumerable<FileInfo> files, DirectoryInfo directoryInfo)
+        private async Task GetFilesInDirectoryAsync(string directory)
         {
             long totalSize = 0;
             int fileCount = 0;
 
-            Parallel.ForEach(files, file =>
+            var filePaths = await Task.Run(() => Directory.EnumerateFiles(directory, "*", _fileSearchOptions));
+            
+            foreach (var filePath in filePaths)
             {
-                if (IsCancellationRequested())
+                if (_searchCancellationTokenSource.Token.IsCancellationRequested)
                 {
                     return;
                 }
 
-                if (IsFileSizeLargerThanMegabytes(10, file))
+                var fileInfo = new FileInfo(filePath);
+                if (IsFileSizeLargerThanMegabytes(10, fileInfo))
                 {
                     Interlocked.Increment(ref fileCount);
-                    Interlocked.Add(ref totalSize, file.Length);
+                    Interlocked.Add(ref totalSize, fileInfo.Length);
                 }
-            });
+            }
 
             if (fileCount == 0)
             {
@@ -270,35 +281,55 @@ namespace AshampooApp.ViewModels
 
             var directoryModel = new DirectoryInfoModel
             {
-                DirectoryPath = directoryInfo.FullName,
+                DirectoryPath = directory,
                 FileCount = fileCount,
                 TotalSize = totalSize
             };
 
-            Application.Current.Dispatcher.Invoke(() =>
+            if (_searchCancellationTokenSource.Token.IsCancellationRequested)
+            {
+                return;
+            }
+
+            await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 UiDirectories.Add(directoryModel);
             });
+
+            _processedDirectories.TryAdd(directory, directory);
         }
 
-        private bool IsFileSizeLargerThanMegabytes(int mg, FileInfo file)
+        private async Task InitializeSearchAsync()
         {
-            return file.Length > mg * 1024 * 1024;
-        }
+            _searchCancellationTokenSource?.Cancel();
 
-        private void InitializeDirectoryCollections(EnumerationOptions enumerationOptions)
-        {
-            _allDirectoryPaths = Directory.EnumerateDirectories(SelectedDrive, "*", enumerationOptions)
-                                          .Order()
-                                          .ToArray();
+            if (_searchTask != null && !_searchTask.IsCompleted)
+            {
+                await _searchTask;
+            }
 
-            _directoryFiles = new Dictionary<string, IEnumerable<FileInfo>>();
+            ResetSearch();
+
+            await Application.Current.Dispatcher.InvokeAsync(UiDirectories.Clear);
+
+            _searchTask = SearchAsync();
+
+            await _searchTask;
         }
 
         private void ResetSearch()
         {
             UiDirectories.Clear();
-            _lastProcessedDirectoryIndex = 0;
+            _processedDirectories.Clear();
+
+            ResethCancellationToken();
+        }
+
+        private void ResethCancellationToken()
+        {
+            _searchCancellationTokenSource?.Cancel();
+            _searchCancellationTokenSource?.Dispose();
+            _searchCancellationTokenSource = new CancellationTokenSource();
         }
 
         private void PauseSearch()
@@ -307,19 +338,15 @@ namespace AshampooApp.ViewModels
             _searchCancellationTokenSource?.Cancel();
         }
 
-        private async Task ResumeSearch()
+        private async Task ResumeSearchAsync()
         {
-            await SearchAsync(false);
+            ResethCancellationToken();
+            await SearchAsync();
         }
 
-        private bool IsCancellationRequested()
+        private async Task ShowModalAsync(string title, string message)
         {
-            return _searchCancellationTokenSource.Token.IsCancellationRequested;
-        }
-
-        private void ShowModal(string title, string message)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
+            await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 var errorDialog = new ErrorDialog();
 
@@ -337,6 +364,17 @@ namespace AshampooApp.ViewModels
 
                 errorDialogWindow.ShowDialog();
             });
+        }
+
+        private bool IsFileSizeLargerThanMegabytes(int mg, FileInfo file)
+        {
+            return file.Length > mg * 1024 * 1024;
+        }
+
+        public void Dispose()
+        {
+            _searchCancellationTokenSource?.Dispose();
+            _semaphore?.Dispose();
         }
     }
 }
