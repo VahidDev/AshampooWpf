@@ -288,11 +288,6 @@ namespace AshampooApp.ViewModels
                 TotalSize = totalSize
             };
 
-            if (_searchCancellationTokenSource.Token.IsCancellationRequested)
-            {
-                return;
-            }
-
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 UiDirectories.Add(directoryModel);
