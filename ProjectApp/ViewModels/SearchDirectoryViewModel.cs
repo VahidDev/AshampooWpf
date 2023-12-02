@@ -231,7 +231,7 @@ namespace ProjectApp.ViewModels
                 }
 
                 await _semaphore.WaitAsync();
-                tasks.Add(Task.Factory.StartNew(async () =>
+                tasks.Add(Task.Run(async () =>
                 {
                     try
                     {
