@@ -1,7 +1,7 @@
-# AshampooWpf
+# Drive Explorer
 
 ## Overview
-AshampooWpf is a simple WPF application that provides a list of all drives and logical volumes on your computer. With a simple click, you can search for directories containing individual files larger than 10 MB on the selected drive or volume. The app utilizes parallel processing for faster performance, and you can pause and resume the search as needed.
+Drive Explorer is a simple WPF application that provides a list of all drives and logical volumes on your computer. With a simple click, you can search for directories containing individual files larger than 10 MB on the selected drive or volume. The app utilizes parallel processing for faster performance, and you can pause and resume the search as needed.
 
 As you run the search, discovered directories are immediately shown in the main window. For each directory, you'll see the total count of files and their combined size, not including sub-directory contents.
 
