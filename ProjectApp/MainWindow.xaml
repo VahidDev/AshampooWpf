@@ -1,0 +1,11 @@
+﻿<Window x:Class="ProjectApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:constants="clr-namespace:Project.Domain.Constants;assembly=Project.Domain"
+        xmlns:prism="http://prismlibrary.com/"
+        Title="Directory Search">
+
+    <Grid>
+        <ContentControl prism:RegionManager.RegionName="{Binding Source={x:Static constants:RegionNames.MainRegion}}" />
+    </Grid>
+</Window>
